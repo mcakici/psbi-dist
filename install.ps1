@@ -77,6 +77,18 @@ function New-RandomSecret([int]$Bytes = 32) {
     return [Convert]::ToBase64String($buffer)
 }
 
+function Test-LaravelAppKey([string]$Value) {
+    if ([string]::IsNullOrWhiteSpace($Value)) { return $false }
+    try {
+        if ($Value.StartsWith("base64:", [StringComparison]::Ordinal)) {
+            return ([Convert]::FromBase64String($Value.Substring(7)).Length -eq 32)
+        }
+        return ([Text.Encoding]::UTF8.GetByteCount($Value) -eq 32)
+    } catch {
+        return $false
+    }
+}
+
 function Find-GatewayPort {
     foreach ($port in 37641..37650) {
         $listener = $null
@@ -149,7 +161,10 @@ try {
         $dbSecret = Get-EnvValue $envPath "DB_PASSWORD"
         if ([string]::IsNullOrWhiteSpace($dbSecret)) { $dbSecret = (New-RandomSecret 24) -replace '[^a-zA-Z0-9]', '' }
         $appKey = Get-EnvValue $envPath "APP_KEY"
-        if ([string]::IsNullOrWhiteSpace($appKey)) { $appKey = "base64:" + (New-RandomSecret 32) }
+        if (-not (Test-LaravelAppKey $appKey)) {
+            if (-not [string]::IsNullOrWhiteSpace($appKey)) { Write-Warning "The existing APP_KEY is invalid and will be replaced." }
+            $appKey = "base64:" + (New-RandomSecret 32)
+        }
         $envContent = @"
 APP_NAME=PSBI
 APP_ENV=production
