@@ -8,7 +8,7 @@ $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
 $InstallRoot = [IO.Path]::GetFullPath($InstallRoot)
 if ($InstallRoot.TrimEnd('\') -eq [IO.Path]::GetPathRoot($InstallRoot).TrimEnd('\') -or $InstallRoot.TrimEnd('\') -eq $env:ProgramData.TrimEnd('\')) {
-    throw "InstallRoot güvenli bir alt klasör olmalıdır."
+    throw "InstallRoot must be a safe subdirectory."
 }
 
 function Write-Utf8NoBom([string]$Path, [string]$Content) {
@@ -25,7 +25,32 @@ function Assert-Administrator {
     $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
     $principal = [Security.Principal.WindowsPrincipal]::new($identity)
     if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-        throw "PSBI kurulumu için PowerShell'i Yönetici olarak açın ve komutu yeniden çalıştırın."
+        throw "Open PowerShell as Administrator and run the PSBI installer again."
+    }
+}
+
+function Stop-ExistingAgent {
+    $existing = Get-Service -Name PSBIAgent -ErrorAction SilentlyContinue
+    if ($existing) {
+        Stop-Service -Name PSBIAgent -Force -ErrorAction SilentlyContinue
+        try { $existing.WaitForStatus('Stopped', [TimeSpan]::FromSeconds(15)) } catch {}
+    }
+
+    $agentProcesses = @(Get-Process -Name "psbi-agent" -ErrorAction SilentlyContinue)
+    if ($agentProcesses.Count -gt 0) {
+        $agentProcesses | Stop-Process -Force -ErrorAction SilentlyContinue
+        $agentProcesses | Wait-Process -Timeout 10 -ErrorAction SilentlyContinue
+    }
+
+    if ($existing) {
+        & sc.exe delete PSBIAgent | Out-Null
+        for ($attempt = 0; $attempt -lt 50; $attempt++) {
+            if (-not (Get-Service -Name PSBIAgent -ErrorAction SilentlyContinue)) { break }
+            Start-Sleep -Milliseconds 200
+        }
+        if (Get-Service -Name PSBIAgent -ErrorAction SilentlyContinue) {
+            throw "The existing PSBI Agent service could not be removed."
+        }
     }
 }
 
@@ -53,7 +78,7 @@ function Find-GatewayPort {
             return $port
         } catch {} finally { if ($listener) { $listener.Stop() } }
     }
-    throw "37641-37650 aralığında boş gateway portu bulunamadı."
+    throw "No available gateway port was found in the 37641-37650 range."
 }
 
 function Find-Chrome {
@@ -66,15 +91,15 @@ function Find-Chrome {
 
 Assert-Administrator
 if (-not ($ManifestUrl -match '^https?://') -or $ManifestUrl.Contains('__PSBI_')) {
-    throw "ManifestUrl yapılandırılmamış. Release workflow placeholder'ı latest.json URL'siyle değiştirmelidir."
+    throw "ManifestUrl is not configured. The release workflow must replace the placeholder with the latest.json URL."
 }
 
 Step "Windows / Docker preflight" {
-    if ($PSVersionTable.PSVersion.Major -lt 5) { throw "PowerShell 5.1 veya üzeri gerekli." }
+    if ($PSVersionTable.PSVersion.Major -lt 5) { throw "PowerShell 5.1 or later is required." }
     & docker version | Out-Null
-    if ($LASTEXITCODE -ne 0) { throw "Docker daemon çalışmıyor. Docker Desktop'ı başlatın." }
+    if ($LASTEXITCODE -ne 0) { throw "The Docker daemon is not running. Start Docker Desktop and try again." }
     & docker compose version | Out-Null
-    if ($LASTEXITCODE -ne 0) { throw "Docker Compose v2 gerekli." }
+    if ($LASTEXITCODE -ne 0) { throw "Docker Compose v2 is required." }
 }
 
 New-Item -ItemType Directory -Force -Path $InstallRoot, (Join-Path $InstallRoot "state"), (Join-Path $InstallRoot "backups") | Out-Null
@@ -83,16 +108,18 @@ New-Item -ItemType Directory -Force -Path $Temp | Out-Null
 
 try {
     Step "Release manifest" { $script:manifest = Invoke-RestMethod -UseBasicParsing -Uri $ManifestUrl }
-    if (-not $manifest.version -or [string]$manifest.version -notmatch '^\d+\.\d+\.\d+(\.\d+)?$' -or -not $manifest.runtime.url -or -not $manifest.runtime.sha256 -or -not $manifest.agent.url -or -not $manifest.agent.sha256 -or -not $manifest.extension.url -or -not $manifest.extension.sha256) { throw "Release manifest eksik veya geçersiz." }
-    if ([string]$manifest.images.app -notmatch '^[a-zA-Z0-9._/@:-]+$' -or [string]$manifest.images.console -notmatch '^[a-zA-Z0-9._/@:-]+$') { throw "Release manifest image referansı geçersiz." }
+    if (-not $manifest.version -or [string]$manifest.version -notmatch '^\d+\.\d+\.\d+(\.\d+)?$' -or -not $manifest.runtime.url -or -not $manifest.runtime.sha256 -or -not $manifest.agent.url -or -not $manifest.agent.sha256 -or -not $manifest.extension.url -or -not $manifest.extension.sha256) { throw "The release manifest is missing required fields or is invalid." }
+    if ([string]$manifest.images.app -notmatch '^[a-zA-Z0-9._/@:-]+$' -or [string]$manifest.images.console -notmatch '^[a-zA-Z0-9._/@:-]+$') { throw "The release manifest contains an invalid image reference." }
 
-    Step "Release dosyaları" {
+    Step "Release files" {
         Save-RemoteFile ([string]$manifest.runtime.url) (Join-Path $Temp "runtime.zip") ([string]$manifest.runtime.sha256)
         Save-RemoteFile ([string]$manifest.extension.url) (Join-Path $Temp "extension.zip") ([string]$manifest.extension.sha256)
         Save-RemoteFile ([string]$manifest.agent.url) (Join-Path $Temp "psbi-agent.exe") ([string]$manifest.agent.sha256)
         Expand-Archive -Force -LiteralPath (Join-Path $Temp "runtime.zip") -DestinationPath (Join-Path $Temp "runtime")
         Expand-Archive -Force -LiteralPath (Join-Path $Temp "extension.zip") -DestinationPath (Join-Path $Temp "extension")
     }
+
+    Step "Stop existing PSBI Agent" { Stop-ExistingAgent }
 
     Step "Runtime configuration" {
         foreach ($name in @("compose.yaml", "nginx.conf", "update.ps1")) {
@@ -131,8 +158,10 @@ REDIS_HOST=redis
 REDIS_PORT=6379
 REDIS_CLIENT=predis
 QUEUE_CONNECTION=redis
+REDIS_QUEUE_RETRY_AFTER=660
 SESSION_DRIVER=database
 CACHE_STORE=redis
+PSBI_REQUIRE_REDIS=true
 BROADCAST_CONNECTION=log
 PSBI_CONTROL_AUTH=false
 PSBI_OLLAMA_URL=http://ollama:11434
@@ -145,12 +174,6 @@ PSBI_EMBEDDING_DIMENSIONS=1024
     }
 
     Step "PSBI Agent Windows Service" {
-        $existing = Get-Service -Name PSBIAgent -ErrorAction SilentlyContinue
-        if ($existing) {
-            Stop-Service -Name PSBIAgent -Force -ErrorAction SilentlyContinue
-            & sc.exe delete PSBIAgent | Out-Null
-            Start-Sleep -Seconds 1
-        }
         New-Service -Name PSBIAgent -BinaryPathName ('"' + (Join-Path $InstallRoot "psbi-agent.exe") + '"') -DisplayName "PSBI Update Agent" -StartupType Automatic | Out-Null
         Start-Service -Name PSBIAgent
     }
@@ -159,9 +182,9 @@ PSBI_EMBEDDING_DIMENSIONS=1024
         Push-Location $InstallRoot
         try {
             & docker compose --env-file .env -f compose.yaml pull
-            if ($LASTEXITCODE -ne 0) { throw "docker compose pull başarısız." }
+            if ($LASTEXITCODE -ne 0) { throw "docker compose pull failed." }
             & docker compose --env-file .env -f compose.yaml up -d --remove-orphans --wait
-            if ($LASTEXITCODE -ne 0) { throw "docker compose up başarısız." }
+            if ($LASTEXITCODE -ne 0) { throw "docker compose up failed." }
         } finally { Pop-Location }
     }
 
@@ -171,7 +194,7 @@ PSBI_EMBEDDING_DIMENSIONS=1024
         $chrome = Find-Chrome
         $extensionPath = Join-Path $InstallRoot "extension"
         if (-not $chrome) {
-            Write-Warning "Chrome/Edge bulunamadı. Extension klasörü: $extensionPath"
+            Write-Warning "Chrome or Edge was not found. Extension directory: $extensionPath"
         } elseif ($ExtensionMode -eq "Dedicated") {
             $shortcutPath = Join-Path ([Environment]::GetFolderPath("Desktop")) "PSBI Browser.lnk"
             $shell = New-Object -ComObject WScript.Shell
@@ -184,11 +207,11 @@ PSBI_EMBEDDING_DIMENSIONS=1024
         } else {
             Start-Process explorer.exe -ArgumentList "/select,`"$extensionPath\manifest.json`""
             Start-Process -FilePath $chrome -ArgumentList "chrome://extensions"
-            Write-Host "Developer mode > Load unpacked ile şu klasörü bir kez seçin: $extensionPath" -ForegroundColor Yellow
+            Write-Host "In Developer mode, choose Load unpacked and select this directory once: $extensionPath" -ForegroundColor Yellow
         }
     }
 
-    Write-Host "PSBI $($manifest.version) hazır: http://127.0.0.1:$gatewayPort" -ForegroundColor Green
+    Write-Host "PSBI $($manifest.version) is ready: http://127.0.0.1:$gatewayPort" -ForegroundColor Green
 } finally {
     if (Test-Path -LiteralPath $Temp) { Remove-Item -Recurse -Force -LiteralPath $Temp }
 }
