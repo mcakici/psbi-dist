@@ -49,7 +49,7 @@ Normal Chrome/Edge profilinde ilk kurulum bir kez manuel tamamlanır:
 4. `C:\ProgramData\PSBI\extension` klasörünü seçin.
 5. PSBI extension'ını araç çubuğuna sabitleyin.
 
-Sonraki uygulama güncellemeleri aynı extension klasörünü otomatik yeniler; klasörü tekrar seçmeniz gerekmez.
+Sonraki uygulama güncellemeleri aynı extension klasörünü yerinde yeniler ve yüklü unpacked extension kendini yeniden yükler. Klasörü tekrar seçmeniz gerekmez; chrome://extensions üzerinde bir kez Load unpacked yeterlidir.
 
 ## Ayrı PSBI tarayıcı profili kullanma
 
