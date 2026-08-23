@@ -24,6 +24,17 @@ function Get-EnvValue([string]$Path, [string]$Name) {
     return $line.Substring($prefix.Length)
 }
 
+function Sync-ExtensionFiles([string]$Source, [string]$Destination) {
+    if (-not (Test-Path -LiteralPath $Source)) { throw "Extension package is missing: $Source" }
+    New-Item -ItemType Directory -Force -Path $Destination | Out-Null
+    Get-ChildItem -LiteralPath $Destination -Force | ForEach-Object {
+        if (-not (Test-Path -LiteralPath (Join-Path $Source $_.Name))) {
+            Remove-Item -Recurse -Force -LiteralPath $_.FullName
+        }
+    }
+    Copy-Item -Force -Recurse -Path (Join-Path $Source "*") -Destination $Destination
+}
+
 function Step([string]$Name, [scriptblock]$Body) {
     Write-Host "==> $Name" -ForegroundColor Cyan
     & $Body
@@ -163,8 +174,8 @@ try {
         }
         Copy-Item -Force -LiteralPath (Join-Path $Temp "psbi-agent.exe") -Destination (Join-Path $InstallRoot "psbi-agent.exe")
         $extensionPath = Join-Path $InstallRoot "extension"
-        if (Test-Path -LiteralPath $extensionPath) { Remove-Item -Recurse -Force -LiteralPath $extensionPath }
-        Move-Item -LiteralPath (Join-Path $Temp "extension") -Destination $extensionPath
+        $script:extensionAlreadyPresent = Test-Path -LiteralPath (Join-Path $extensionPath "manifest.json")
+        Sync-ExtensionFiles -Source (Join-Path $Temp "extension") -Destination $extensionPath
 
         $envPath = Join-Path $InstallRoot ".env"
         $existingGatewayPort = Get-EnvValue $envPath "PSBI_GATEWAY_PORT"
@@ -300,9 +311,13 @@ PSBI_LLM_MODEL=$llmModel
             $shortcut.Save()
             Start-Process -FilePath $shortcutPath
         } else {
-            Start-Process explorer.exe -ArgumentList "/select,`"$extensionPath\manifest.json`""
+            try { Set-Clipboard -Value $extensionPath } catch {}
             Start-Process -FilePath $chrome -ArgumentList "chrome://extensions"
-            Write-Host "In Developer mode, choose Load unpacked and select this directory once: $extensionPath" -ForegroundColor Yellow
+            if ($script:extensionAlreadyPresent) {
+                Write-Host "Extension files were refreshed in place. In chrome://extensions click Reload on PSBI." -ForegroundColor Yellow
+            } else {
+                Write-Host "Developer mode -> Load unpacked. Path is on the clipboard: $extensionPath" -ForegroundColor Yellow
+            }
         }
     }
 
