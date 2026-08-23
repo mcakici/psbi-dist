@@ -16,6 +16,14 @@ function Write-Utf8NoBom([string]$Path, [string]$Content) {
     [IO.File]::WriteAllText($Path, $Content, $encoding)
 }
 
+function Get-EnvValue([string]$Path, [string]$Name) {
+    if (-not (Test-Path -LiteralPath $Path)) { return $null }
+    $prefix = $Name + "="
+    $line = Get-Content -LiteralPath $Path | Where-Object { $_.StartsWith($prefix, [StringComparison]::Ordinal) } | Select-Object -First 1
+    if ($null -eq $line) { return $null }
+    return $line.Substring($prefix.Length)
+}
+
 function Step([string]$Name, [scriptblock]$Body) {
     Write-Host "==> $Name" -ForegroundColor Cyan
     & $Body
@@ -130,9 +138,18 @@ try {
         if (Test-Path -LiteralPath $extensionPath) { Remove-Item -Recurse -Force -LiteralPath $extensionPath }
         Move-Item -LiteralPath (Join-Path $Temp "extension") -Destination $extensionPath
 
-        $script:gatewayPort = Find-GatewayPort
-        $dbSecret = (New-RandomSecret 24) -replace '[^a-zA-Z0-9]', ''
-        $appKey = "base64:" + (New-RandomSecret 32)
+        $envPath = Join-Path $InstallRoot ".env"
+        $existingGatewayPort = Get-EnvValue $envPath "PSBI_GATEWAY_PORT"
+        if ($existingGatewayPort -match '^\d+$' -and [int]$existingGatewayPort -ge 37641 -and [int]$existingGatewayPort -le 37650) {
+            $script:gatewayPort = [int]$existingGatewayPort
+        } else {
+            $script:gatewayPort = Find-GatewayPort
+        }
+
+        $dbSecret = Get-EnvValue $envPath "DB_PASSWORD"
+        if ([string]::IsNullOrWhiteSpace($dbSecret)) { $dbSecret = (New-RandomSecret 24) -replace '[^a-zA-Z0-9]', '' }
+        $appKey = Get-EnvValue $envPath "APP_KEY"
+        if ([string]::IsNullOrWhiteSpace($appKey)) { $appKey = "base64:" + (New-RandomSecret 32) }
         $envContent = @"
 APP_NAME=PSBI
 APP_ENV=production
@@ -178,11 +195,39 @@ PSBI_EMBEDDING_DIMENSIONS=1024
         Start-Service -Name PSBIAgent
     }
 
-    Step "Docker Compose pull/up" {
+    Step "Docker Compose pull" {
         Push-Location $InstallRoot
         try {
             & docker compose --env-file .env -f compose.yaml pull
             if ($LASTEXITCODE -ne 0) { throw "docker compose pull failed." }
+        } finally { Pop-Location }
+    }
+
+    Step "PostgreSQL credentials" {
+        Push-Location $InstallRoot
+        try {
+            & docker compose --env-file .env -f compose.yaml stop app worker scheduler reverb gateway | Out-Null
+            if ($LASTEXITCODE -ne 0) { throw "Existing application containers could not be stopped." }
+            & docker compose --env-file .env -f compose.yaml up -d --wait postgres redis
+            if ($LASTEXITCODE -ne 0) { throw "PostgreSQL or Redis failed to start." }
+
+            $dbUser = Get-EnvValue (Join-Path $InstallRoot ".env") "DB_USERNAME"
+            $dbName = Get-EnvValue (Join-Path $InstallRoot ".env") "DB_DATABASE"
+            $dbPassword = Get-EnvValue (Join-Path $InstallRoot ".env") "DB_PASSWORD"
+            if ($dbUser -notmatch '^[a-zA-Z_][a-zA-Z0-9_]*$' -or $dbName -notmatch '^[a-zA-Z_][a-zA-Z0-9_]*$' -or [string]::IsNullOrWhiteSpace($dbPassword)) {
+                throw "Database credentials in .env are invalid."
+            }
+            $escapedDbUser = $dbUser.Replace('"', '""')
+            $escapedDbPassword = $dbPassword.Replace("'", "''")
+            $sql = "ALTER ROLE `"$escapedDbUser`" WITH PASSWORD '$escapedDbPassword';"
+            $sql | & docker compose --env-file .env -f compose.yaml exec -T --user postgres postgres psql -v ON_ERROR_STOP=1 -U $dbUser -d $dbName
+            if ($LASTEXITCODE -ne 0) { throw "PostgreSQL credentials could not be synchronized." }
+        } finally { Pop-Location }
+    }
+
+    Step "Docker Compose up" {
+        Push-Location $InstallRoot
+        try {
             & docker compose --env-file .env -f compose.yaml up -d --remove-orphans --wait
             if ($LASTEXITCODE -ne 0) { throw "docker compose up failed." }
         } finally { Pop-Location }
