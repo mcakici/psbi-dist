@@ -17,6 +17,7 @@ Bu rehber, PSBI uygulamasını ve Chrome/Edge extension'ını Windows üzerinde 
 PowerShell'i **Yönetici olarak çalıştır** seçeneğiyle açın ve aşağıdaki komutları çalıştırın:
 
 ```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
 $installer = Join-Path $env:TEMP "psbi-install.ps1"
 Invoke-WebRequest -UseBasicParsing -Uri "https://raw.githubusercontent.com/mcakici/psbi-dist/main/install.ps1" -OutFile $installer
 Unblock-File -LiteralPath $installer
