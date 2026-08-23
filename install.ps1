@@ -89,6 +89,21 @@ function Test-LaravelAppKey([string]$Value) {
     }
 }
 
+function Get-RequiredOllamaModels($Manifest) {
+    $models = @()
+    if ($null -ne $Manifest.models -and $null -ne $Manifest.models.required) {
+        foreach ($model in @($Manifest.models.required)) {
+            $value = ([string]$model).Trim()
+            if (-not [string]::IsNullOrWhiteSpace($value)) { $models += $value }
+        }
+    }
+    if ($models.Count -eq 0) { $models = @("qwen3-embedding:0.6b") }
+    foreach ($model in $models) {
+        if ($model -notmatch '^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,199}$') { throw "The release manifest contains an invalid Ollama model name." }
+    }
+    return $models
+}
+
 function Find-GatewayPort {
     foreach ($port in 37641..37650) {
         $listener = $null
@@ -130,6 +145,7 @@ try {
     Step "Release manifest" { $script:manifest = Invoke-RestMethod -UseBasicParsing -Uri $ManifestUrl }
     if (-not $manifest.version -or [string]$manifest.version -notmatch '^\d+\.\d+\.\d+(\.\d+)?$' -or -not $manifest.runtime.url -or -not $manifest.runtime.sha256 -or -not $manifest.agent.url -or -not $manifest.agent.sha256 -or -not $manifest.extension.url -or -not $manifest.extension.sha256) { throw "The release manifest is missing required fields or is invalid." }
     if ([string]$manifest.images.app -notmatch '^[a-zA-Z0-9._/@:-]+$' -or [string]$manifest.images.console -notmatch '^[a-zA-Z0-9._/@:-]+$') { throw "The release manifest contains an invalid image reference." }
+    $requiredOllamaModels = @(Get-RequiredOllamaModels $manifest)
 
     Step "Release files" {
         Save-RemoteFile ([string]$manifest.runtime.url) (Join-Path $Temp "runtime.zip") ([string]$manifest.runtime.sha256)
@@ -165,6 +181,14 @@ try {
             if (-not [string]::IsNullOrWhiteSpace($appKey)) { Write-Warning "The existing APP_KEY is invalid and will be replaced." }
             $appKey = "base64:" + (New-RandomSecret 32)
         }
+        $embeddingModel = Get-EnvValue $envPath "PSBI_EMBEDDING_MODEL"
+        if ([string]::IsNullOrWhiteSpace($embeddingModel)) { $embeddingModel = "qwen3-embedding:0.6b" }
+        if ($embeddingModel -notmatch '^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,199}$') { throw "The configured embedding model name is invalid." }
+        $embeddingDimensions = Get-EnvValue $envPath "PSBI_EMBEDDING_DIMENSIONS"
+        if ($embeddingDimensions -notmatch '^\d+$' -or [int]$embeddingDimensions -lt 1 -or [int]$embeddingDimensions -gt 65536) { $embeddingDimensions = "1024" }
+        $llmModel = Get-EnvValue $envPath "PSBI_LLM_MODEL"
+        if (-not [string]::IsNullOrWhiteSpace($llmModel) -and $llmModel -notmatch '^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,199}$') { throw "The configured LLM model name is invalid." }
+        $requiredOllamaModelsValue = $requiredOllamaModels -join ','
         $envContent = @"
 APP_NAME=PSBI
 APP_ENV=production
@@ -191,15 +215,18 @@ REDIS_PORT=6379
 REDIS_CLIENT=predis
 QUEUE_CONNECTION=redis
 REDIS_QUEUE_RETRY_AFTER=660
+REDIS_MODEL_QUEUE_RETRY_AFTER=604800
 SESSION_DRIVER=database
 CACHE_STORE=redis
 PSBI_REQUIRE_REDIS=true
 BROADCAST_CONNECTION=log
 PSBI_CONTROL_AUTH=false
 PSBI_OLLAMA_URL=http://ollama:11434
+PSBI_REQUIRED_OLLAMA_MODELS=$requiredOllamaModelsValue
 PSBI_EMBEDDING_PROVIDER=ollama
-PSBI_EMBEDDING_MODEL=qwen3-embedding:0.6b
-PSBI_EMBEDDING_DIMENSIONS=1024
+PSBI_EMBEDDING_MODEL=$embeddingModel
+PSBI_EMBEDDING_DIMENSIONS=$embeddingDimensions
+PSBI_LLM_MODEL=$llmModel
 "@
         Write-Utf8NoBom (Join-Path $InstallRoot ".env") ($envContent.Trim() + [Environment]::NewLine)
         Write-Utf8NoBom (Join-Path $InstallRoot "config.json") (@{ manifestUrl = $ManifestUrl; installRoot = $InstallRoot } | ConvertTo-Json)
@@ -243,8 +270,16 @@ PSBI_EMBEDDING_DIMENSIONS=1024
     Step "Docker Compose up" {
         Push-Location $InstallRoot
         try {
-            & docker compose --env-file .env -f compose.yaml up -d --remove-orphans --wait
+            & docker compose --env-file .env -f compose.yaml up -d --remove-orphans --wait app worker model-worker ollama scheduler reverb postgres redis gateway console
             if ($LASTEXITCODE -ne 0) { throw "docker compose up failed." }
+        } finally { Pop-Location }
+    }
+
+    Step "Queue required Ollama models" {
+        Push-Location $InstallRoot
+        try {
+            & docker compose --env-file .env -f compose.yaml exec -T app php artisan psbi:models:ensure
+            if ($LASTEXITCODE -ne 0) { throw "Required Ollama models could not be queued." }
         } finally { Pop-Location }
     }
 
