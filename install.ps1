@@ -48,6 +48,30 @@ function Assert-Administrator {
     }
 }
 
+function Grant-UpdateRuntimeAccess([string]$Root) {
+    $userSid = [Security.Principal.WindowsIdentity]::GetCurrent().User
+    if ($null -eq $userSid) { throw "The interactive Windows user could not be determined." }
+    $inherit = [Security.AccessControl.InheritanceFlags]::ContainerInherit -bor [Security.AccessControl.InheritanceFlags]::ObjectInherit
+    $propagation = [Security.AccessControl.PropagationFlags]::None
+    $allow = [Security.AccessControl.AccessControlType]::Allow
+
+    foreach ($name in @("state", "staging", "backups", "extension")) {
+        $path = Join-Path $Root $name
+        New-Item -ItemType Directory -Force -Path $path | Out-Null
+        $acl = Get-Acl -LiteralPath $path
+        $acl.SetAccessRule([Security.AccessControl.FileSystemAccessRule]::new($userSid, [Security.AccessControl.FileSystemRights]::Modify, $inherit, $propagation, $allow))
+        Set-Acl -LiteralPath $path -AclObject $acl
+    }
+
+    foreach ($name in @("compose.yaml", ".env", "nginx.conf", "update.ps1")) {
+        $path = Join-Path $Root $name
+        if (-not (Test-Path -LiteralPath $path)) { continue }
+        $acl = Get-Acl -LiteralPath $path
+        $acl.SetAccessRule([Security.AccessControl.FileSystemAccessRule]::new($userSid, [Security.AccessControl.FileSystemRights]::Modify, $allow))
+        Set-Acl -LiteralPath $path -AclObject $acl
+    }
+}
+
 function Stop-ExistingAgent {
     $existing = Get-Service -Name PSBIAgent -ErrorAction SilentlyContinue
     if ($existing) {
@@ -246,6 +270,13 @@ PSBI_LLM_MODEL=$llmModel
     Step "PSBI Agent Windows Service" {
         New-Service -Name PSBIAgent -BinaryPathName ('"' + (Join-Path $InstallRoot "psbi-agent.exe") + '"') -DisplayName "PSBI Update Agent" -StartupType Automatic | Out-Null
         Start-Service -Name PSBIAgent
+    }
+
+    Step "Update runtime permissions" {
+        # The updater runs in the signed-in user's session so it can reach Docker
+        # Desktop. Only mutable runtime data is writable; psbi-agent.exe remains
+        # protected because the Windows service executes it as LocalSystem.
+        Grant-UpdateRuntimeAccess $InstallRoot
     }
 
     Step "Docker Compose pull" {
