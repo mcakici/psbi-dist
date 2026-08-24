@@ -1,11 +1,13 @@
 param(
     [string]$ManifestUrl = "https://raw.githubusercontent.com/mcakici/psbi-dist/main/latest.json",
-    [string]$InstallRoot = "$env:ProgramData\PSBI",
+    [string]$InstallRoot = "$env:ProgramData\PSBI-Instance",
+    [ValidatePattern('^[a-z0-9][a-z0-9_-]*$')][string]$ComposeProjectName = "psbi-instance",
     [ValidateSet("Manual", "Dedicated")][string]$ExtensionMode = "Manual"
 )
 
 $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
+$composeProjectNameWasExplicit = $PSBoundParameters.ContainsKey("ComposeProjectName")
 $InstallRoot = [IO.Path]::GetFullPath($InstallRoot)
 if ($InstallRoot.TrimEnd('\') -eq [IO.Path]::GetPathRoot($InstallRoot).TrimEnd('\') -or $InstallRoot.TrimEnd('\') -eq $env:ProgramData.TrimEnd('\')) {
     throw "InstallRoot must be a safe subdirectory."
@@ -202,6 +204,15 @@ try {
         Sync-ExtensionFiles -Source (Join-Path $Temp "extension") -Destination $extensionPath
 
         $envPath = Join-Path $InstallRoot ".env"
+        if (-not $composeProjectNameWasExplicit) {
+            $existingComposeProjectName = Get-EnvValue $envPath "COMPOSE_PROJECT_NAME"
+            if ($existingComposeProjectName -match '^[a-z0-9][a-z0-9_-]*$') {
+                $script:ComposeProjectName = $existingComposeProjectName
+            } elseif (Test-Path -LiteralPath $envPath) {
+                # Installations created before project isolation used the legacy psbi project.
+                $script:ComposeProjectName = "psbi"
+            }
+        }
         $existingGatewayPort = Get-EnvValue $envPath "PSBI_GATEWAY_PORT"
         if ($existingGatewayPort -match '^\d+$' -and [int]$existingGatewayPort -ge 37641 -and [int]$existingGatewayPort -le 37650) {
             $script:gatewayPort = [int]$existingGatewayPort
@@ -225,6 +236,7 @@ try {
         if (-not [string]::IsNullOrWhiteSpace($llmModel) -and $llmModel -notmatch '^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,199}$') { throw "The configured LLM model name is invalid." }
         $requiredOllamaModelsValue = $requiredOllamaModels -join ','
         $envContent = @"
+COMPOSE_PROJECT_NAME=$ComposeProjectName
 APP_NAME=PSBI
 APP_ENV=production
 APP_DEBUG=false
@@ -264,7 +276,7 @@ PSBI_EMBEDDING_DIMENSIONS=$embeddingDimensions
 PSBI_LLM_MODEL=$llmModel
 "@
         Write-Utf8NoBom (Join-Path $InstallRoot ".env") ($envContent.Trim() + [Environment]::NewLine)
-        Write-Utf8NoBom (Join-Path $InstallRoot "config.json") (@{ manifestUrl = $ManifestUrl; installRoot = $InstallRoot } | ConvertTo-Json)
+        Write-Utf8NoBom (Join-Path $InstallRoot "config.json") (@{ manifestUrl = $ManifestUrl; installRoot = $InstallRoot; composeProjectName = $ComposeProjectName } | ConvertTo-Json)
     }
 
     Step "PSBI Agent Windows Service" {
@@ -282,7 +294,7 @@ PSBI_LLM_MODEL=$llmModel
     Step "Docker Compose pull" {
         Push-Location $InstallRoot
         try {
-            & docker compose --env-file .env -f compose.yaml pull
+            & docker compose -p $ComposeProjectName --env-file .env -f compose.yaml pull
             if ($LASTEXITCODE -ne 0) { throw "docker compose pull failed." }
         } finally { Pop-Location }
     }
@@ -290,9 +302,9 @@ PSBI_LLM_MODEL=$llmModel
     Step "PostgreSQL credentials" {
         Push-Location $InstallRoot
         try {
-            & docker compose --env-file .env -f compose.yaml stop app worker scheduler reverb gateway | Out-Null
+            & docker compose -p $ComposeProjectName --env-file .env -f compose.yaml stop app worker scheduler reverb gateway | Out-Null
             if ($LASTEXITCODE -ne 0) { throw "Existing application containers could not be stopped." }
-            & docker compose --env-file .env -f compose.yaml up -d --wait postgres redis
+            & docker compose -p $ComposeProjectName --env-file .env -f compose.yaml up -d --wait postgres redis
             if ($LASTEXITCODE -ne 0) { throw "PostgreSQL or Redis failed to start." }
 
             $dbUser = Get-EnvValue (Join-Path $InstallRoot ".env") "DB_USERNAME"
@@ -304,7 +316,7 @@ PSBI_LLM_MODEL=$llmModel
             $escapedDbUser = $dbUser.Replace('"', '""')
             $escapedDbPassword = $dbPassword.Replace("'", "''")
             $sql = "ALTER ROLE `"$escapedDbUser`" WITH PASSWORD '$escapedDbPassword';"
-            $sql | & docker compose --env-file .env -f compose.yaml exec -T --user postgres postgres psql -v ON_ERROR_STOP=1 -U $dbUser -d $dbName
+            $sql | & docker compose -p $ComposeProjectName --env-file .env -f compose.yaml exec -T --user postgres postgres psql -v ON_ERROR_STOP=1 -U $dbUser -d $dbName
             if ($LASTEXITCODE -ne 0) { throw "PostgreSQL credentials could not be synchronized." }
         } finally { Pop-Location }
     }
@@ -312,7 +324,7 @@ PSBI_LLM_MODEL=$llmModel
     Step "Docker Compose up" {
         Push-Location $InstallRoot
         try {
-            & docker compose --env-file .env -f compose.yaml up -d --remove-orphans --wait app worker model-worker ollama scheduler reverb postgres redis gateway console
+            & docker compose -p $ComposeProjectName --env-file .env -f compose.yaml up -d --remove-orphans --wait app worker model-worker ollama scheduler reverb postgres redis gateway console
             if ($LASTEXITCODE -ne 0) { throw "docker compose up failed." }
         } finally { Pop-Location }
     }
@@ -320,7 +332,7 @@ PSBI_LLM_MODEL=$llmModel
     Step "Queue required Ollama models" {
         Push-Location $InstallRoot
         try {
-            & docker compose --env-file .env -f compose.yaml exec -T app php artisan psbi:models:ensure
+        & docker compose -p $ComposeProjectName --env-file .env -f compose.yaml exec -T app php artisan psbi:models:ensure
             if ($LASTEXITCODE -ne 0) { throw "Required Ollama models could not be queued." }
         } finally { Pop-Location }
     }
