@@ -86,7 +86,7 @@ function Grant-UpdateRuntimeAccess([string]$Root) {
         Set-Acl -LiteralPath $path -AclObject $acl
     }
 
-    foreach ($name in @("compose.yaml", ".env", ".env.override", ".env.defaults", "nginx.conf", "update.ps1")) {
+    foreach ($name in @("compose.yaml", ".env", ".env.override", ".env.defaults", "nginx.conf", "postgres-auto-tune.sh", "update.ps1")) {
         $path = Join-Path $Root $name
         if (-not (Test-Path -LiteralPath $path)) { continue }
         $acl = Get-Acl -LiteralPath $path
