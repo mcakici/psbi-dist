@@ -279,7 +279,7 @@ try {
             DB_DATABASE = "psbi"
             DB_USERNAME = "psbi"
             DB_PASSWORD = $dbSecret
-            SESSION_DRIVER = "database"
+            SESSION_DRIVER = "redis"
             PSBI_CONTROL_AUTH = "false"
             PSBI_REQUIRED_OLLAMA_MODELS = $requiredOllamaModelsValue
             PSBI_EMBEDDING_MODEL = $embeddingModel
