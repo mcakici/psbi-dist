@@ -26,6 +26,23 @@ function Get-EnvValue([string]$Path, [string]$Name) {
     return $line.Substring($prefix.Length)
 }
 
+function Set-EnvValue([string]$Path, [string]$Name, [string]$Value) {
+    $lines = if (Test-Path -LiteralPath $Path) { @(Get-Content -LiteralPath $Path) } else { @() }
+    $prefix = $Name + "="
+    $updated = $false
+    $next = foreach ($line in $lines) {
+        if ($line.StartsWith($prefix, [StringComparison]::Ordinal)) {
+            if (-not $updated) { $prefix + $Value; $updated = $true }
+        } else {
+            $line
+        }
+    }
+    if (-not $updated) { $next += $prefix + $Value }
+    $temporary = $Path + ".tmp"
+    Write-Utf8NoBom $temporary (($next -join [Environment]::NewLine).TrimEnd() + [Environment]::NewLine)
+    Move-Item -Force -LiteralPath $temporary -Destination $Path
+}
+
 function Sync-ExtensionFiles([string]$Source, [string]$Destination) {
     if (-not (Test-Path -LiteralPath $Source)) { throw "Extension package is missing: $Source" }
     New-Item -ItemType Directory -Force -Path $Destination | Out-Null
@@ -65,7 +82,7 @@ function Grant-UpdateRuntimeAccess([string]$Root) {
         Set-Acl -LiteralPath $path -AclObject $acl
     }
 
-    foreach ($name in @("compose.yaml", ".env", "nginx.conf", "update.ps1")) {
+    foreach ($name in @("compose.yaml", ".env", ".env.override", ".env.defaults", "nginx.conf", "update.ps1")) {
         $path = Join-Path $Root $name
         if (-not (Test-Path -LiteralPath $path)) { continue }
         $acl = Get-Acl -LiteralPath $path
@@ -195,7 +212,7 @@ try {
     Step "Stop existing PSBI Agent" { Stop-ExistingAgent }
 
     Step "Runtime configuration" {
-        foreach ($name in @("compose.yaml", "nginx.conf", "postgres-auto-tune.sh", "update.ps1")) {
+        foreach ($name in @("compose.yaml", ".env.defaults", "nginx.conf", "postgres-auto-tune.sh", "update.ps1")) {
             Copy-Item -Force -LiteralPath (Join-Path $Temp ("runtime\" + $name)) -Destination (Join-Path $InstallRoot $name)
         }
         Copy-Item -Force -LiteralPath (Join-Path $Temp "psbi-agent.exe") -Destination (Join-Path $InstallRoot "psbi-agent.exe")
@@ -235,52 +252,44 @@ try {
         $llmModel = Get-EnvValue $envPath "PSBI_LLM_MODEL"
         if (-not [string]::IsNullOrWhiteSpace($llmModel) -and $llmModel -notmatch '^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,199}$') { throw "The configured LLM model name is invalid." }
         $requiredOllamaModelsValue = $requiredOllamaModels -join ','
-        $envContent = @"
-COMPOSE_PROJECT_NAME=$ComposeProjectName
-APP_NAME=PSBI
-APP_ENV=production
-APP_DEBUG=false
-APP_KEY=$appKey
-APP_URL=http://127.0.0.1:$gatewayPort
-ASSET_URL=http://127.0.0.1:$gatewayPort
-PSBI_VERSION=$($manifest.version)
-PSBI_MIN_EXTENSION_VERSION=$($manifest.extension.version)
-PSBI_GATEWAY_PORT=$gatewayPort
-PSBI_APP_IMAGE=$($manifest.images.app)
-PSBI_CONSOLE_IMAGE=$($manifest.images.console)
-PSBI_RELEASE_MANIFEST_URL=$ManifestUrl
-PSBI_AGENT_HOST=host.docker.internal
-PSBI_AGENT_PORT=7300
-DB_CONNECTION=pgsql
-DB_HOST=postgres
-DB_PORT=5432
-DB_DATABASE=psbi
-DB_USERNAME=psbi
-DB_PASSWORD=$dbSecret
-REDIS_HOST=redis
-REDIS_PORT=6379
-REDIS_CLIENT=predis
-QUEUE_CONNECTION=redis
-REDIS_QUEUE_RETRY_AFTER=660
-REDIS_MODEL_QUEUE_RETRY_AFTER=604800
-SESSION_DRIVER=database
-CACHE_STORE=redis
-PSBI_REQUIRE_REDIS=true
-BROADCAST_CONNECTION=log
-PSBI_CONTROL_AUTH=false
-PSBI_OLLAMA_URL=http://ollama:11434
-PSBI_REQUIRED_OLLAMA_MODELS=$requiredOllamaModelsValue
-PSBI_EMBEDDING_PROVIDER=ollama
-PSBI_EMBEDDING_MODEL=$embeddingModel
-PSBI_EMBEDDING_DIMENSIONS=$embeddingDimensions
-PSBI_LLM_MODEL=$llmModel
-"@
-        Write-Utf8NoBom (Join-Path $InstallRoot ".env") ($envContent.Trim() + [Environment]::NewLine)
+        if (-not (Test-Path -LiteralPath $envPath)) {
+            Write-Utf8NoBom $envPath "# PSBI protected instance values. Manage user overrides in .env.override.`r`n"
+        }
+        $overrideEnvPath = Join-Path $InstallRoot ".env.override"
+        if (-not (Test-Path -LiteralPath $overrideEnvPath)) {
+            Write-Utf8NoBom $overrideEnvPath "# User-managed runtime overrides.`r`n"
+        }
+        $instanceValues = [ordered]@{
+            COMPOSE_PROJECT_NAME = $ComposeProjectName
+            APP_KEY = $appKey
+            APP_URL = "http://127.0.0.1:$gatewayPort"
+            ASSET_URL = "http://127.0.0.1:$gatewayPort"
+            PSBI_VERSION = [string]$manifest.version
+            PSBI_MIN_EXTENSION_VERSION = [string]$manifest.extension.version
+            PSBI_GATEWAY_PORT = [string]$gatewayPort
+            PSBI_APP_IMAGE = [string]$manifest.images.app
+            PSBI_CONSOLE_IMAGE = [string]$manifest.images.console
+            PSBI_RELEASE_MANIFEST_URL = $ManifestUrl
+            PSBI_AGENT_HOST = "host.docker.internal"
+            PSBI_AGENT_PORT = "7300"
+            DB_DATABASE = "psbi"
+            DB_USERNAME = "psbi"
+            DB_PASSWORD = $dbSecret
+            SESSION_DRIVER = "database"
+            PSBI_CONTROL_AUTH = "false"
+            PSBI_REQUIRED_OLLAMA_MODELS = $requiredOllamaModelsValue
+            PSBI_EMBEDDING_MODEL = $embeddingModel
+            PSBI_EMBEDDING_DIMENSIONS = $embeddingDimensions
+            PSBI_LLM_MODEL = $llmModel
+        }
+        foreach ($entry in $instanceValues.GetEnumerator()) { Set-EnvValue $envPath $entry.Key ([string]$entry.Value) }
         Write-Utf8NoBom (Join-Path $InstallRoot "config.json") (@{ manifestUrl = $ManifestUrl; installRoot = $InstallRoot; composeProjectName = $ComposeProjectName } | ConvertTo-Json)
     }
 
     Step "PSBI Agent Windows Service" {
         New-Service -Name PSBIAgent -BinaryPathName ('"' + (Join-Path $InstallRoot "psbi-agent.exe") + '"') -DisplayName "PSBI Update Agent" -StartupType Automatic | Out-Null
+        $serviceRegistryPath = "HKLM:\SYSTEM\CurrentControlSet\Services\PSBIAgent"
+        Set-ItemProperty -LiteralPath $serviceRegistryPath -Name Environment -Type MultiString -Value ([string[]]@("PSBI_HOME=$InstallRoot"))
         Start-Service -Name PSBIAgent
     }
 
@@ -294,7 +303,7 @@ PSBI_LLM_MODEL=$llmModel
     Step "Docker Compose pull" {
         Push-Location $InstallRoot
         try {
-            & docker compose -p $ComposeProjectName --env-file .env -f compose.yaml pull
+            & docker compose -p $ComposeProjectName --env-file .env.defaults --env-file .env --env-file .env.override -f compose.yaml pull
             if ($LASTEXITCODE -ne 0) { throw "docker compose pull failed." }
         } finally { Pop-Location }
     }
@@ -302,9 +311,9 @@ PSBI_LLM_MODEL=$llmModel
     Step "PostgreSQL credentials" {
         Push-Location $InstallRoot
         try {
-            & docker compose -p $ComposeProjectName --env-file .env -f compose.yaml stop app worker scheduler reverb gateway | Out-Null
+            & docker compose -p $ComposeProjectName --env-file .env.defaults --env-file .env --env-file .env.override -f compose.yaml stop app worker scheduler reverb gateway | Out-Null
             if ($LASTEXITCODE -ne 0) { throw "Existing application containers could not be stopped." }
-            & docker compose -p $ComposeProjectName --env-file .env -f compose.yaml up -d --wait postgres redis
+            & docker compose -p $ComposeProjectName --env-file .env.defaults --env-file .env --env-file .env.override -f compose.yaml up -d --wait postgres redis
             if ($LASTEXITCODE -ne 0) { throw "PostgreSQL or Redis failed to start." }
 
             $dbUser = Get-EnvValue (Join-Path $InstallRoot ".env") "DB_USERNAME"
@@ -316,7 +325,7 @@ PSBI_LLM_MODEL=$llmModel
             $escapedDbUser = $dbUser.Replace('"', '""')
             $escapedDbPassword = $dbPassword.Replace("'", "''")
             $sql = "ALTER ROLE `"$escapedDbUser`" WITH PASSWORD '$escapedDbPassword';"
-            $sql | & docker compose -p $ComposeProjectName --env-file .env -f compose.yaml exec -T --user postgres postgres psql -v ON_ERROR_STOP=1 -U $dbUser -d $dbName
+            $sql | & docker compose -p $ComposeProjectName --env-file .env.defaults --env-file .env --env-file .env.override -f compose.yaml exec -T --user postgres postgres psql -v ON_ERROR_STOP=1 -U $dbUser -d $dbName
             if ($LASTEXITCODE -ne 0) { throw "PostgreSQL credentials could not be synchronized." }
         } finally { Pop-Location }
     }
@@ -324,7 +333,7 @@ PSBI_LLM_MODEL=$llmModel
     Step "Docker Compose up" {
         Push-Location $InstallRoot
         try {
-            & docker compose -p $ComposeProjectName --env-file .env -f compose.yaml up -d --remove-orphans --wait app worker model-worker ollama scheduler reverb postgres redis gateway console
+            & docker compose -p $ComposeProjectName --env-file .env.defaults --env-file .env --env-file .env.override -f compose.yaml up -d --remove-orphans --wait app worker model-worker ollama scheduler reverb postgres redis gateway console
             if ($LASTEXITCODE -ne 0) { throw "docker compose up failed." }
         } finally { Pop-Location }
     }
@@ -332,7 +341,7 @@ PSBI_LLM_MODEL=$llmModel
     Step "Queue required Ollama models" {
         Push-Location $InstallRoot
         try {
-        & docker compose -p $ComposeProjectName --env-file .env -f compose.yaml exec -T app php artisan psbi:models:ensure
+        & docker compose -p $ComposeProjectName --env-file .env.defaults --env-file .env --env-file .env.override -f compose.yaml exec -T app php artisan psbi:models:ensure
             if ($LASTEXITCODE -ne 0) { throw "Required Ollama models could not be queued." }
         } finally { Pop-Location }
     }
