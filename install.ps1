@@ -30,13 +30,17 @@ function Set-EnvValue([string]$Path, [string]$Name, [string]$Value) {
     $lines = if (Test-Path -LiteralPath $Path) { @(Get-Content -LiteralPath $Path) } else { @() }
     $prefix = $Name + "="
     $updated = $false
-    $next = foreach ($line in $lines) {
-        if ($line.StartsWith($prefix, [StringComparison]::Ordinal)) {
-            if (-not $updated) { $prefix + $Value; $updated = $true }
-        } else {
-            $line
+    # PowerShell unwraps a single pipeline result to a scalar string. Keep an
+    # array here so += appends a new env line instead of concatenating strings.
+    $next = @(
+        foreach ($line in $lines) {
+            if ($line.StartsWith($prefix, [StringComparison]::Ordinal)) {
+                if (-not $updated) { $prefix + $Value; $updated = $true }
+            } else {
+                $line
+            }
         }
-    }
+    )
     if (-not $updated) { $next += $prefix + $Value }
     $temporary = $Path + ".tmp"
     Write-Utf8NoBom $temporary (($next -join [Environment]::NewLine).TrimEnd() + [Environment]::NewLine)
