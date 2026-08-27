@@ -86,7 +86,7 @@ function Grant-UpdateRuntimeAccess([string]$Root) {
         Set-Acl -LiteralPath $path -AclObject $acl
     }
 
-    foreach ($name in @("compose.yaml", ".env", ".env.override", ".env.defaults", "nginx.conf", "postgres-auto-tune.sh", "update.ps1")) {
+    foreach ($name in @("compose.yaml", ".env", ".env.override", ".env.defaults", "nginx.conf", "postgres-auto-tune.sh", "update.ps1", "cleanup-docker.ps1")) {
         $path = Join-Path $Root $name
         if (-not (Test-Path -LiteralPath $path)) { continue }
         $acl = Get-Acl -LiteralPath $path
@@ -216,7 +216,7 @@ try {
     Step "Stop existing PSBI Agent" { Stop-ExistingAgent }
 
     Step "Runtime configuration" {
-        foreach ($name in @("compose.yaml", ".env.defaults", "nginx.conf", "postgres-auto-tune.sh", "update.ps1")) {
+        foreach ($name in @("compose.yaml", ".env.defaults", "nginx.conf", "postgres-auto-tune.sh", "update.ps1", "cleanup-docker.ps1")) {
             Copy-Item -Force -LiteralPath (Join-Path $Temp ("runtime\" + $name)) -Destination (Join-Path $InstallRoot $name)
         }
         Copy-Item -Force -LiteralPath (Join-Path $Temp "psbi-agent.exe") -Destination (Join-Path $InstallRoot "psbi-agent.exe")
