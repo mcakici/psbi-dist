@@ -1,9 +1,9 @@
 {
-  "version": "1.0.21",
-  "publishedAt": "2026-08-29T20:43:53Z",
+  "version": "1.0.22",
+  "publishedAt": "2026-08-29T21:15:35Z",
   "images": {
-    "app": "ghcr.io/mcakici/psbi-app@sha256:36842104e41cd7f8c4f9ebedd9b6c1f52023fdc732c4fe9c35cefbbb489b8988",
-    "console": "ghcr.io/mcakici/psbi-console@sha256:089f41b2e4a270e717805338a4f454c0e2094e644f8f2b61666efe455dde0271"
+    "app": "ghcr.io/mcakici/psbi-app@sha256:6fa1f3dfaaabcefeb37e08993a7d828828d5897d607410a2289d9c3bbea8e8eb",
+    "console": "ghcr.io/mcakici/psbi-console@sha256:ee66d48d67c37d17d1b331d992e249080e86eb432288be2d3c5bc4450d69ae3b"
   },
   "models": {
     "required": [
@@ -11,17 +11,17 @@
     ]
   },
   "runtime": {
-    "url": "https://github.com/mcakici/psbi-dist/releases/download/v1.0.21/psbi-runtime.zip",
-    "sha256": "c4167944dbd051b486df4a67f0d5f5716caa5fc0c052692e64136f3fc6d099fe"
+    "url": "https://github.com/mcakici/psbi-dist/releases/download/v1.0.22/psbi-runtime.zip",
+    "sha256": "161e1cbc54f3621aae51ef92c5e8330dfb494207923a08b94052677b2da8a129"
   },
   "extension": {
-    "version": "1.0.21",
-    "url": "https://github.com/mcakici/psbi-dist/releases/download/v1.0.21/psbi-extension.zip",
-    "sha256": "981bf7d47f2eb0b75e83b4aab67cb57f6e5731c9af6a70a47f5ea8451b8cd9e3"
+    "version": "1.0.22",
+    "url": "https://github.com/mcakici/psbi-dist/releases/download/v1.0.22/psbi-extension.zip",
+    "sha256": "eea96666a19354d285f8c88a268a05c307115faca2fcd428a973ea600cc7b75b"
   },
   "agent": {
-    "version": "1.0.21",
-    "url": "https://github.com/mcakici/psbi-dist/releases/download/v1.0.21/psbi-agent.exe",
-    "sha256": "4147cb0b55b930f8069832e105a70509f140e7c5e046f2436b227962f3ade131"
+    "version": "1.0.22",
+    "url": "https://github.com/mcakici/psbi-dist/releases/download/v1.0.22/psbi-agent.exe",
+    "sha256": "3ff1214d0ef31b966dd8de150cfaa58cb5d51036d2f9f326408b501fa91e466e"
   }
 }
