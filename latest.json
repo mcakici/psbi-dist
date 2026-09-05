@@ -1,10 +1,9 @@
 {
-  "version": "1.0.37",
-  "publishedAt": "2026-09-05T12:23:31Z",
+  "version": "1.0.38",
+  "publishedAt": "2026-09-05T13:11:58Z",
   "images": {
-    "app": "ghcr.io/mcakici/psbi-app@sha256:94747992f8955424e843c9fb94bdf61fb259af1b34e6d13fa8cc0c7884879b33",
-    "console": "ghcr.io/mcakici/psbi-console@sha256:70a0c3106f08dda0e0cb88b48e927000ac0a95d6c2f5c42b706ebaf2114ac615",
-    "agent_bridge": "ghcr.io/mcakici/psbi-agent-bridge@sha256:a123ed91453fe2769b4fc54258fa17d6690239689f5d51d0b82a5b410ca6c8d4"
+    "app": "ghcr.io/mcakici/psbi-app@sha256:dfd5204b5b9954e08b286045ef3e37baf68f0dab44db9d7d217e9f2297530f51",
+    "console": "ghcr.io/mcakici/psbi-console@sha256:0d31168f88a15a0fb16e7d8e401e2cb4bf0022d353e5989441063609eb615539"
   },
   "models": {
     "required": [
@@ -12,17 +11,17 @@
     ]
   },
   "runtime": {
-    "url": "https://github.com/mcakici/psbi-dist/releases/download/v1.0.37/psbi-runtime.zip",
-    "sha256": "f5e8011a112b2c52d16f95444f78924ed86a832e069ffedbc45ee1ecc63dd25d"
+    "url": "https://github.com/mcakici/psbi-dist/releases/download/v1.0.38/psbi-runtime.zip",
+    "sha256": "dd930fded2e301bc105c2ccc646e7105a6186a0d77b9dcc626c326b809fe89f4"
   },
   "extension": {
-    "version": "1.0.37",
-    "url": "https://github.com/mcakici/psbi-dist/releases/download/v1.0.37/psbi-extension.zip",
-    "sha256": "6508414ab23cdc78a7d8271047d7ce1e3a5ced75c01f473fbe9f7b8e743d96a9"
+    "version": "1.0.38",
+    "url": "https://github.com/mcakici/psbi-dist/releases/download/v1.0.38/psbi-extension.zip",
+    "sha256": "ce632dac2ce52cfc3b4b3b0ad55abef30f8fa84e427571c310af490194f9d090"
   },
   "agent": {
-    "version": "1.0.37",
-    "url": "https://github.com/mcakici/psbi-dist/releases/download/v1.0.37/psbi-agent.exe",
-    "sha256": "68a22da84e5b8ee5450236cf24dfb3597168881b9ff93eab3dee59cbc009b45f"
+    "version": "1.0.38",
+    "url": "https://github.com/mcakici/psbi-dist/releases/download/v1.0.38/psbi-agent.exe",
+    "sha256": "77155e79e7c6817e3af331d077970a26f9133967d7b0a2213f4dfa3ea1c978a6"
   }
 }

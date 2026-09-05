@@ -273,8 +273,6 @@ try {
             PSBI_GATEWAY_PORT = [string]$gatewayPort
             PSBI_APP_IMAGE = [string]$manifest.images.app
             PSBI_CONSOLE_IMAGE = [string]$manifest.images.console
-            PSBI_AGENT_BRIDGE_IMAGE = if ($manifest.images.agent_bridge) { [string]$manifest.images.agent_bridge } else { "psbi-agent-bridge:local" }
-            PSBI_AGENT_BRIDGE_PULL_POLICY = if ($manifest.images.agent_bridge) { "always" } else { "never" }
             PSBI_RELEASE_MANIFEST_URL = $ManifestUrl
             PSBI_AGENT_HOST = "host.docker.internal"
             PSBI_AGENT_PORT = "7300"
@@ -317,7 +315,7 @@ try {
     Step "PostgreSQL credentials" {
         Push-Location $InstallRoot
         try {
-            & docker compose -p $ComposeProjectName --env-file .env.defaults --env-file .env --env-file .env.override -f compose.yaml stop app worker scheduler reverb gateway agent-bridge | Out-Null
+            & docker compose -p $ComposeProjectName --env-file .env.defaults --env-file .env --env-file .env.override -f compose.yaml stop app worker scheduler reverb gateway | Out-Null
             if ($LASTEXITCODE -ne 0) { throw "Existing application containers could not be stopped." }
             & docker compose -p $ComposeProjectName --env-file .env.defaults --env-file .env --env-file .env.override -f compose.yaml up -d --wait postgres redis
             if ($LASTEXITCODE -ne 0) { throw "PostgreSQL or Redis failed to start." }
@@ -339,15 +337,7 @@ try {
     Step "Docker Compose up" {
         Push-Location $InstallRoot
         try {
-            $servicesToStart = @("app", "worker", "model-worker", "ollama", "scheduler", "reverb", "postgres", "redis", "gateway", "console")
-            $bridgeImage = Get-EnvValue (Join-Path $InstallRoot ".env") "PSBI_AGENT_BRIDGE_IMAGE"
-            if ([string]::IsNullOrWhiteSpace($bridgeImage)) { $bridgeImage = "psbi-agent-bridge:local" }
-            $bridgePullPolicy = Get-EnvValue (Join-Path $InstallRoot ".env") "PSBI_AGENT_BRIDGE_PULL_POLICY"
-            $hasBridgeImage = ($bridgePullPolicy -eq "always") -or [bool](& docker images -q $bridgeImage 2>$null)
-            if ($hasBridgeImage) {
-                $servicesToStart += "agent-bridge"
-            }
-            & docker compose -p $ComposeProjectName --env-file .env.defaults --env-file .env --env-file .env.override -f compose.yaml up -d --remove-orphans --wait @servicesToStart
+            & docker compose -p $ComposeProjectName --env-file .env.defaults --env-file .env --env-file .env.override -f compose.yaml up -d --remove-orphans --wait app worker model-worker ollama scheduler reverb postgres redis gateway console
             if ($LASTEXITCODE -ne 0) { throw "docker compose up failed." }
         } finally { Pop-Location }
     }
