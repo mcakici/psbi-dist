@@ -1,9 +1,10 @@
 {
-  "version": "1.0.39",
-  "publishedAt": "2026-09-05T13:32:36Z",
+  "version": "1.0.41",
+  "publishedAt": "2026-09-05T16:32:37Z",
   "images": {
-    "app": "ghcr.io/mcakici/psbi-app@sha256:4098a9b433d0fd69d2ca8ba92d9565a4e049798ab6d4cdad3495be93e5ea35ca",
-    "console": "ghcr.io/mcakici/psbi-console@sha256:bed4c1fad8500e5619d10903ac7af60aa426670a4218e24aeeab41d068f274ca"
+    "app": "ghcr.io/mcakici/psbi-app@sha256:0298e6da17a016f79bd80507857f2c06d489c248360f7314e3577b252300afcb",
+    "console": "ghcr.io/mcakici/psbi-console@sha256:795d9d3397bb4546cae76c56672b5fa95060a20635f91ccdd55932e2f971ef1e",
+    "agent_bridge": "ghcr.io/mcakici/psbi-agent-bridge@sha256:cf4e830adb0a24fe7faa6c454f207f605b13bb3d93cb39970bb4e1effb5cef98"
   },
   "models": {
     "required": [
@@ -11,17 +12,17 @@
     ]
   },
   "runtime": {
-    "url": "https://github.com/mcakici/psbi-dist/releases/download/v1.0.39/psbi-runtime.zip",
-    "sha256": "12dd844917678994ad42a8cbb96048aedbe174c003273838b70c2830b523e032"
+    "url": "https://github.com/mcakici/psbi-dist/releases/download/v1.0.41/psbi-runtime.zip",
+    "sha256": "cb76c16c16759ea64760186ffd18c61684a5d317581ae1b40225812ea48a4741"
   },
   "extension": {
-    "version": "1.0.39",
-    "url": "https://github.com/mcakici/psbi-dist/releases/download/v1.0.39/psbi-extension.zip",
-    "sha256": "1bd4000eaa2d1b3bd51444021b227b28cbcf1c192f4fc591da15598af4d9fdff"
+    "version": "1.0.41",
+    "url": "https://github.com/mcakici/psbi-dist/releases/download/v1.0.41/psbi-extension.zip",
+    "sha256": "95d0b0fd45013460026712e5628488a66116fe8b8c7ba51e2db9579daffb9eda"
   },
   "agent": {
-    "version": "1.0.39",
-    "url": "https://github.com/mcakici/psbi-dist/releases/download/v1.0.39/psbi-agent.exe",
-    "sha256": "2647bc18d06e8391ba78abdf332e6c7d0e6fc0cf4eb8aa3958d1bed86a69766d"
+    "version": "1.0.41",
+    "url": "https://github.com/mcakici/psbi-dist/releases/download/v1.0.41/psbi-agent.exe",
+    "sha256": "48781f1b081a891ba126e7acfd69e1ec40e2e6e7113608d995edef26cd742cd0"
   }
 }

@@ -204,6 +204,7 @@ try {
     if (-not $manifest.version -or [string]$manifest.version -notmatch '^\d+\.\d+\.\d+(\.\d+)?$' -or -not $manifest.runtime.url -or -not $manifest.runtime.sha256 -or -not $manifest.agent.url -or -not $manifest.agent.sha256 -or -not $manifest.extension.url -or -not $manifest.extension.sha256) { throw "The release manifest is missing required fields or is invalid." }
     if ([string]$manifest.images.app -notmatch '^[a-zA-Z0-9._/@:-]+$' -or [string]$manifest.images.console -notmatch '^[a-zA-Z0-9._/@:-]+$') { throw "The release manifest contains an invalid image reference." }
     $requiredOllamaModels = @(Get-RequiredOllamaModels $manifest)
+    if ([string]$manifest.images.agent_bridge -notmatch '^[a-zA-Z0-9._/@:-]+$') { throw "The release manifest is missing a valid agent_bridge image. Publish a complete release before installing." }
 
     Step "Release files" {
         Save-RemoteFile ([string]$manifest.runtime.url) (Join-Path $Temp "runtime.zip") ([string]$manifest.runtime.sha256)
@@ -273,6 +274,8 @@ try {
             PSBI_GATEWAY_PORT = [string]$gatewayPort
             PSBI_APP_IMAGE = [string]$manifest.images.app
             PSBI_CONSOLE_IMAGE = [string]$manifest.images.console
+            PSBI_AGENT_BRIDGE_IMAGE = [string]$manifest.images.agent_bridge
+            PSBI_AGENT_BRIDGE_PULL_POLICY = "missing"
             PSBI_RELEASE_MANIFEST_URL = $ManifestUrl
             PSBI_AGENT_HOST = "host.docker.internal"
             PSBI_AGENT_PORT = "7300"
