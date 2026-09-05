@@ -315,7 +315,7 @@ try {
     Step "PostgreSQL credentials" {
         Push-Location $InstallRoot
         try {
-            & docker compose -p $ComposeProjectName --env-file .env.defaults --env-file .env --env-file .env.override -f compose.yaml stop app worker scheduler reverb gateway | Out-Null
+            & docker compose -p $ComposeProjectName --env-file .env.defaults --env-file .env --env-file .env.override -f compose.yaml stop app worker scheduler reverb gateway agent-bridge | Out-Null
             if ($LASTEXITCODE -ne 0) { throw "Existing application containers could not be stopped." }
             & docker compose -p $ComposeProjectName --env-file .env.defaults --env-file .env --env-file .env.override -f compose.yaml up -d --wait postgres redis
             if ($LASTEXITCODE -ne 0) { throw "PostgreSQL or Redis failed to start." }
@@ -337,7 +337,7 @@ try {
     Step "Docker Compose up" {
         Push-Location $InstallRoot
         try {
-            & docker compose -p $ComposeProjectName --env-file .env.defaults --env-file .env --env-file .env.override -f compose.yaml up -d --remove-orphans --wait app worker model-worker ollama scheduler reverb postgres redis gateway console
+            & docker compose -p $ComposeProjectName --env-file .env.defaults --env-file .env --env-file .env.override -f compose.yaml up -d --remove-orphans --wait app worker model-worker ollama scheduler reverb postgres redis gateway console agent-bridge
             if ($LASTEXITCODE -ne 0) { throw "docker compose up failed." }
         } finally { Pop-Location }
     }
