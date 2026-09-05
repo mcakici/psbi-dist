@@ -1,10 +1,10 @@
 {
-  "version": "1.0.41",
-  "publishedAt": "2026-09-05T16:32:37Z",
+  "version": "1.0.42",
+  "publishedAt": "2026-09-05T16:44:06Z",
   "images": {
-    "app": "ghcr.io/mcakici/psbi-app@sha256:0298e6da17a016f79bd80507857f2c06d489c248360f7314e3577b252300afcb",
-    "console": "ghcr.io/mcakici/psbi-console@sha256:795d9d3397bb4546cae76c56672b5fa95060a20635f91ccdd55932e2f971ef1e",
-    "agent_bridge": "ghcr.io/mcakici/psbi-agent-bridge@sha256:cf4e830adb0a24fe7faa6c454f207f605b13bb3d93cb39970bb4e1effb5cef98"
+    "app": "ghcr.io/mcakici/psbi-app@sha256:aa5e175586e0b212eba5c4e8645c32cfbb4c4edf9e075b733fdb4801a80b1585",
+    "console": "ghcr.io/mcakici/psbi-console@sha256:2766e434de7f7e08bc5328e97bd49660789270d40e549918c8768d52b3325851",
+    "agent_bridge": "ghcr.io/mcakici/psbi-agent-bridge@sha256:a61c74007da7bafa7b8a2749fd72d21bb6a424063ac00edfa4571fc9c611f5b7"
   },
   "models": {
     "required": [
@@ -12,17 +12,17 @@
     ]
   },
   "runtime": {
-    "url": "https://github.com/mcakici/psbi-dist/releases/download/v1.0.41/psbi-runtime.zip",
-    "sha256": "cb76c16c16759ea64760186ffd18c61684a5d317581ae1b40225812ea48a4741"
+    "url": "https://github.com/mcakici/psbi-dist/releases/download/v1.0.42/psbi-runtime.zip",
+    "sha256": "83b1818b35fbdda18ff1eb527d9c6de30ab9168ac258122d4c6cdefe13b30126"
   },
   "extension": {
-    "version": "1.0.41",
-    "url": "https://github.com/mcakici/psbi-dist/releases/download/v1.0.41/psbi-extension.zip",
-    "sha256": "95d0b0fd45013460026712e5628488a66116fe8b8c7ba51e2db9579daffb9eda"
+    "version": "1.0.42",
+    "url": "https://github.com/mcakici/psbi-dist/releases/download/v1.0.42/psbi-extension.zip",
+    "sha256": "d55a9ec9bfaee6cdf917590d4c2ece26333b61df1bfc53e4ee678c1d64a94a8a"
   },
   "agent": {
-    "version": "1.0.41",
-    "url": "https://github.com/mcakici/psbi-dist/releases/download/v1.0.41/psbi-agent.exe",
-    "sha256": "48781f1b081a891ba126e7acfd69e1ec40e2e6e7113608d995edef26cd742cd0"
+    "version": "1.0.42",
+    "url": "https://github.com/mcakici/psbi-dist/releases/download/v1.0.42/psbi-agent.exe",
+    "sha256": "2719cb470e434f30788520fb1b355d51c80832e4d45842c44706a5dbc010151f"
   }
 }
