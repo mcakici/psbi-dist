@@ -1,9 +1,10 @@
 {
-  "version": "1.0.36",
-  "publishedAt": "2026-09-05T01:53:22Z",
+  "version": "1.0.37",
+  "publishedAt": "2026-09-05T12:23:31Z",
   "images": {
-    "app": "ghcr.io/mcakici/psbi-app@sha256:954be0258240596c987a1a891352f2a1d49510a64d82e82b0a17d527c8e1eec4",
-    "console": "ghcr.io/mcakici/psbi-console@sha256:651631432aec44ce1e0cf12466af1ed59f4176a46c1e43a4b4dc60ff2bacc574"
+    "app": "ghcr.io/mcakici/psbi-app@sha256:94747992f8955424e843c9fb94bdf61fb259af1b34e6d13fa8cc0c7884879b33",
+    "console": "ghcr.io/mcakici/psbi-console@sha256:70a0c3106f08dda0e0cb88b48e927000ac0a95d6c2f5c42b706ebaf2114ac615",
+    "agent_bridge": "ghcr.io/mcakici/psbi-agent-bridge@sha256:a123ed91453fe2769b4fc54258fa17d6690239689f5d51d0b82a5b410ca6c8d4"
   },
   "models": {
     "required": [
@@ -11,17 +12,17 @@
     ]
   },
   "runtime": {
-    "url": "https://github.com/mcakici/psbi-dist/releases/download/v1.0.36/psbi-runtime.zip",
-    "sha256": "77179bbfc93de7b3739be07b215181ba0c2f3bd9b22e9872b7f792ae240b6824"
+    "url": "https://github.com/mcakici/psbi-dist/releases/download/v1.0.37/psbi-runtime.zip",
+    "sha256": "f5e8011a112b2c52d16f95444f78924ed86a832e069ffedbc45ee1ecc63dd25d"
   },
   "extension": {
-    "version": "1.0.36",
-    "url": "https://github.com/mcakici/psbi-dist/releases/download/v1.0.36/psbi-extension.zip",
-    "sha256": "dc403eaa6f2f9a0751bf8d8f4f0095c1772f45b2fe0002773041c3e85ed74239"
+    "version": "1.0.37",
+    "url": "https://github.com/mcakici/psbi-dist/releases/download/v1.0.37/psbi-extension.zip",
+    "sha256": "6508414ab23cdc78a7d8271047d7ce1e3a5ced75c01f473fbe9f7b8e743d96a9"
   },
   "agent": {
-    "version": "1.0.36",
-    "url": "https://github.com/mcakici/psbi-dist/releases/download/v1.0.36/psbi-agent.exe",
-    "sha256": "21b81b4124d598daa00dca1b8a05a56021bf80a093261e857d5ee5f19f83c68d"
+    "version": "1.0.37",
+    "url": "https://github.com/mcakici/psbi-dist/releases/download/v1.0.37/psbi-agent.exe",
+    "sha256": "68a22da84e5b8ee5450236cf24dfb3597168881b9ff93eab3dee59cbc009b45f"
   }
 }
