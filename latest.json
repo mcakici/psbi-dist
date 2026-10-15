@@ -1,10 +1,15 @@
 {
-  "version": "1.0.42",
-  "publishedAt": "2026-09-05T16:44:06Z",
+  "version": "1.0.43",
+  "publishedAt": "2026-10-15T12:29:31Z",
   "images": {
-    "app": "ghcr.io/mcakici/psbi-app@sha256:aa5e175586e0b212eba5c4e8645c32cfbb4c4edf9e075b733fdb4801a80b1585",
-    "console": "ghcr.io/mcakici/psbi-console@sha256:2766e434de7f7e08bc5328e97bd49660789270d40e549918c8768d52b3325851",
-    "agent_bridge": "ghcr.io/mcakici/psbi-agent-bridge@sha256:a61c74007da7bafa7b8a2749fd72d21bb6a424063ac00edfa4571fc9c611f5b7"
+    "app": "ghcr.io/mcakici/psbi-app@sha256:6953503feb323cc06e29b7a9e1a007bf6538839eef8cfa0e4729c21480539970",
+    "console": "ghcr.io/mcakici/psbi-console@sha256:fb4cae8b77bf1e4b9433e96ded8bc9792158c6c02c71ed38504c31f29e468508",
+    "agent_bridge": "ghcr.io/mcakici/psbi-agent-bridge@sha256:4991636bd9abc5299b5c2855436b51c97af4c95aa45b7b70968f0400048de403"
+  },
+  "components": {
+    "antigravity_cli": {
+      "version": "1.3.5"
+    }
   },
   "models": {
     "required": [
@@ -12,17 +17,17 @@
     ]
   },
   "runtime": {
-    "url": "https://github.com/mcakici/psbi-dist/releases/download/v1.0.42/psbi-runtime.zip",
-    "sha256": "83b1818b35fbdda18ff1eb527d9c6de30ab9168ac258122d4c6cdefe13b30126"
+    "url": "https://github.com/mcakici/psbi-dist/releases/download/v1.0.43/psbi-runtime.zip",
+    "sha256": "74eb372ad2119034f5ee30a3dcccb8c32e970b1051662b5039d8d16b75c376e3"
   },
   "extension": {
-    "version": "1.0.42",
-    "url": "https://github.com/mcakici/psbi-dist/releases/download/v1.0.42/psbi-extension.zip",
-    "sha256": "d55a9ec9bfaee6cdf917590d4c2ece26333b61df1bfc53e4ee678c1d64a94a8a"
+    "version": "1.0.43",
+    "url": "https://github.com/mcakici/psbi-dist/releases/download/v1.0.43/psbi-extension.zip",
+    "sha256": "82d05cbdcb893b58ccce13d902f8e999c6f2aae1a28c7dbc4a5fe358d8632ec7"
   },
   "agent": {
-    "version": "1.0.42",
-    "url": "https://github.com/mcakici/psbi-dist/releases/download/v1.0.42/psbi-agent.exe",
-    "sha256": "2719cb470e434f30788520fb1b355d51c80832e4d45842c44706a5dbc010151f"
+    "version": "1.0.43",
+    "url": "https://github.com/mcakici/psbi-dist/releases/download/v1.0.43/psbi-agent.exe",
+    "sha256": "5f03bfd4cbf01a6d4d23994a80e6b1a8fdaa55511d6cd7e6a8bfb395d65d3158"
   }
 }
