@@ -1,10 +1,10 @@
 {
-  "version": "1.0.43",
-  "publishedAt": "2026-10-15T12:29:31Z",
+  "version": "1.0.44",
+  "publishedAt": "2026-10-15T14:34:23Z",
   "images": {
-    "app": "ghcr.io/mcakici/psbi-app@sha256:6953503feb323cc06e29b7a9e1a007bf6538839eef8cfa0e4729c21480539970",
-    "console": "ghcr.io/mcakici/psbi-console@sha256:fb4cae8b77bf1e4b9433e96ded8bc9792158c6c02c71ed38504c31f29e468508",
-    "agent_bridge": "ghcr.io/mcakici/psbi-agent-bridge@sha256:4991636bd9abc5299b5c2855436b51c97af4c95aa45b7b70968f0400048de403"
+    "app": "ghcr.io/mcakici/psbi-app@sha256:c15b18a72d8868c0c61b0c289ffc7537149bf1e1092f4a46c2e214257b23d0bc",
+    "console": "ghcr.io/mcakici/psbi-console@sha256:83ccafa4bbe27f9dc017bf002a55eaa111461e07adc7a54c66122db10585d339",
+    "agent_bridge": "ghcr.io/mcakici/psbi-agent-bridge@sha256:aad0f4d39c71d820bd8548112c3d59ca4043e24ed12414531540bf2cdc8c5c14"
   },
   "components": {
     "antigravity_cli": {
@@ -17,17 +17,17 @@
     ]
   },
   "runtime": {
-    "url": "https://github.com/mcakici/psbi-dist/releases/download/v1.0.43/psbi-runtime.zip",
-    "sha256": "74eb372ad2119034f5ee30a3dcccb8c32e970b1051662b5039d8d16b75c376e3"
+    "url": "https://github.com/mcakici/psbi-dist/releases/download/v1.0.44/psbi-runtime.zip",
+    "sha256": "53dd9eba5044022b69f71b3c965bf819b825e2840c76c3ba39ca997128bb2979"
   },
   "extension": {
-    "version": "1.0.43",
-    "url": "https://github.com/mcakici/psbi-dist/releases/download/v1.0.43/psbi-extension.zip",
-    "sha256": "82d05cbdcb893b58ccce13d902f8e999c6f2aae1a28c7dbc4a5fe358d8632ec7"
+    "version": "1.0.44",
+    "url": "https://github.com/mcakici/psbi-dist/releases/download/v1.0.44/psbi-extension.zip",
+    "sha256": "bd6e63ac820c66b9bfd0171b34f1eff02c89a5b8c66d3ba7f70ba4a895341c64"
   },
   "agent": {
-    "version": "1.0.43",
-    "url": "https://github.com/mcakici/psbi-dist/releases/download/v1.0.43/psbi-agent.exe",
-    "sha256": "5f03bfd4cbf01a6d4d23994a80e6b1a8fdaa55511d6cd7e6a8bfb395d65d3158"
+    "version": "1.0.44",
+    "url": "https://github.com/mcakici/psbi-dist/releases/download/v1.0.44/psbi-agent.exe",
+    "sha256": "82bc683c405f842cc7eaf1704cd66323a7f584af36912f6d7c66a59e1f165eaf"
   }
 }
