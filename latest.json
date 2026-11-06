@@ -1,14 +1,17 @@
 {
-  "version": "1.0.47",
-  "publishedAt": "2026-10-19T12:10:11Z",
+  "version": "1.0.50",
+  "publishedAt": "2026-11-06T03:22:46Z",
   "images": {
-    "app": "ghcr.io/mcakici/psbi-app@sha256:6315a8d95a93c04c56eaa6502f5b708c9d8d8335edfcbd61e968d1f1239bec35",
-    "console": "ghcr.io/mcakici/psbi-console@sha256:717e64716ba227b044e765f63842834a340a9ff4f2ba9a1d7477516296fe7d30",
-    "agent_bridge": "ghcr.io/mcakici/psbi-agent-bridge@sha256:251075b2c6c00bb8f59c0dff8630eb3b8b28dd882168dc64f879ae1cb2f577b1"
+    "app": "ghcr.io/mcakici/psbi-app@sha256:23841ce41d14741d7c248280cf5cc6ef324d3e9722ee0d475abb544ca6825b25",
+    "console": "ghcr.io/mcakici/psbi-console@sha256:ba76863317b505024b8f00239ce756ffc72515755e9725a02300b3f1e02c7702",
+    "agent_bridge": "ghcr.io/mcakici/psbi-agent-bridge@sha256:9e43c8bee94948257eff94cdbd67cad1c5805889e4222ca3c95e877abbc0697b"
   },
   "components": {
     "antigravity_cli": {
-      "version": "1.4.2"
+      "version": "1.5.1"
+    },
+    "codex_cli": {
+      "version": "0.167.0"
     }
   },
   "models": {
@@ -17,17 +20,17 @@
     ]
   },
   "runtime": {
-    "url": "https://github.com/mcakici/psbi-dist/releases/download/v1.0.47/psbi-runtime.zip",
-    "sha256": "15a9fbb241412fcf44832cc230234f5fe508ed75ab5b2221d1520e7352ff5bb2"
+    "url": "https://github.com/mcakici/psbi-dist/releases/download/v1.0.50/psbi-runtime.zip",
+    "sha256": "214c45757563dd15328b6af696b55996faa37e0b6c4297716df3ced79a675b9e"
   },
   "extension": {
-    "version": "1.0.47",
-    "url": "https://github.com/mcakici/psbi-dist/releases/download/v1.0.47/psbi-extension.zip",
-    "sha256": "5f6c5c2389fe6b3ab42e986e85bb1b3eea701006dfc3d885a6e4cdc8aaceb7ef"
+    "version": "1.0.50",
+    "url": "https://github.com/mcakici/psbi-dist/releases/download/v1.0.50/psbi-extension.zip",
+    "sha256": "6a572e516813ea080d1cfb59079e0bb0ca1f9fc1e39b9b6969e3091dd77af43f"
   },
   "agent": {
-    "version": "1.0.47",
-    "url": "https://github.com/mcakici/psbi-dist/releases/download/v1.0.47/psbi-agent.exe",
-    "sha256": "718ee720b91990b143edf4b813e85405be03e39fac35b2f3689370a05fbb7573"
+    "version": "1.0.50",
+    "url": "https://github.com/mcakici/psbi-dist/releases/download/v1.0.50/psbi-agent.exe",
+    "sha256": "155ca428c3c9e866a4fa751a87630e384b3f97259688019600bd0513c5c1c1e8"
   }
 }
